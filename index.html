@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Raspberry Pi Temperature Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Temperature Dashboard</h1>
+    <canvas id="tempChart" width="400" height="200"></canvas>
+    <script>
+        async function fetchData() {
+            const response = await fetch('/data');
+            return await response.json();
+        }
+
+        function updateChart(chart, data) {
+            chart.data.labels = data.map(entry => new Date(entry.timestamp * 1000).toLocaleTimeString());
+            chart.data.datasets[0].data = data.map(entry => entry.cpu_temp);
+            chart.data.datasets[1].data = data.map(entry => entry.gpu_temp);
+            chart.update();
+        }
+
+        async function initChart() {
+            const ctx = document.getElementById('tempChart').getContext('2d');
+            const tempChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'CPU Temperature',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        data: [],
+                    }, {
+                        label: 'GPU Temperature',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        data: [],
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'second'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+
+            setInterval(async () => {
+                const data = await fetchData();
+                updateChart(tempChart, data);
+            }, 5000);
+        }
+
+        initChart();
+    </script>
+</body>
+</html>
